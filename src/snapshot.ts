@@ -29,7 +29,7 @@ const snapshot = async (): Promise<void> => {
         const name = lodash.camelCase(camera.name);
         log(`Retrieving snapshot for ${camera.name}`);
         try {
-            const result = await camera.getSnapshot();
+            const result = await camera.getSnapshot({ width: 1280 });
 
             log((path.resolve(__dirname, "target", name)));
             if (!existsSync(path.resolve(__dirname, "target", name))) {
