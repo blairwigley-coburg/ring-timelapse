@@ -37,16 +37,11 @@ const snapshot = async (): Promise<void> => {
             log(`Requesting snapshot${opts.width ? ' (width=' + opts.width + ')' : ''}`);
             const result = await (camera as any).getSnapshot(Object.keys(opts).length ? opts : undefined);
 
-            log((path.resolve(__dirname, "target", name)));
-                    const widthEnv = process.env.SNAPSHOT_WIDTH;
-                    const width = widthEnv ? parseInt(widthEnv, 10) : undefined;
-                    const opts: any = {};
-                    if (width && !Number.isNaN(width)) opts.width = width;
-                    log(`Requesting snapshot${opts.width ? ' (width=' + opts.width + ')' : ''}`);
-                    const result = await (camera as any).getSnapshot(Object.keys(opts).length ? opts : undefined);
+            log(path.resolve(__dirname, "target", name));
+            if (!existsSync(path.resolve(__dirname, "target", name))) {
                 mkdirSync(path.resolve(__dirname, "target", name));
             }
-            writeFileSync(path.resolve(__dirname, "target", path.join(name, Date.now() + '.png')), result, );
+            writeFileSync(path.resolve(__dirname, "target", path.join(name, Date.now() + '.png')), result);
             log(`Snapshot for ${camera.name} saved`);
 
         }
