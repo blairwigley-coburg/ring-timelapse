@@ -97,6 +97,10 @@ const snapshot = async (): Promise<void> => {
             if (!existsSync(path.resolve(__dirname, "target", name))) {
                 mkdirSync(path.resolve(__dirname, "target", name));
             }
+            if (!result) {
+                log(`No snapshot result for ${camera.name}, skipping save`);
+                continue;
+            }
             writeFileSync(path.resolve(__dirname, "target", path.join(name, Date.now() + '.png')), result);
             log(`Snapshot for ${camera.name} saved`);
 
