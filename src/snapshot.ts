@@ -55,7 +55,24 @@ const snapshot = async (): Promise<void> => {
 
         }
         catch (err) {
-            log(`Snapshot error: ${err}`);
+            // Log detailed error info to help diagnose PATCH/GET failures
+            try {
+                if (err && (err as any).response) {
+                    const e: any = err as any;
+                    log(`Snapshot error: ${e.message || e}`);
+                    log('Response status:', e.response.status);
+                    try { log('Response data:', JSON.stringify(e.response.data)); } catch { log('Response data (non-serializable)'); }
+                }
+                else if (err && (err as any).stack) {
+                    log((err as any).stack);
+                }
+                else {
+                    log('Snapshot error:', err);
+                }
+            }
+            catch (logErr) {
+                log('Failed logging error:', logErr, 'original error:', err);
+            }
         }
     
 
