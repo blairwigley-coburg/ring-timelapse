@@ -36,12 +36,23 @@ const snapshot = async (): Promise<void> => {
             // Configure camera for high resolution (2K) snapshots
             const resolutionEnv = process.env.SNAPSHOT_RESOLUTION || '2304'; // Default to 2K (2304p)
             const resolution = parseInt(resolutionEnv, 10);
-            log(`Setting camera resolution to ${resolution}p`);
-            await (camera as any).setDeviceSettings({
-                snapshot_settings: {
-                    lite_24x7_resolution_p: resolution
+            const forceSet = process.env.FORCE_SET_DEVICE_SETTINGS === 'true';
+            if (forceSet) {
+                log(`Setting camera resolution to ${resolution}p`);
+                try {
+                    await (camera as any).setDeviceSettings({
+                        snapshot_settings: {
+                            lite_24x7_resolution_p: resolution,
+                        },
+                    });
                 }
-            });
+                catch (e) {
+                    log('setDeviceSettings failed:', e && (e as any).response ? `${(e as any).response.status}` : e);
+                }
+            }
+            else {
+                log('Skipping setDeviceSettings (disabled). Set FORCE_SET_DEVICE_SETTINGS=true to enable.');
+            }
 
             log(`Requesting snapshot`);
             const result = await (camera as any).getSnapshot();
