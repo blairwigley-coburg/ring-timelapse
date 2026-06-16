@@ -3,6 +3,10 @@
 
 A Docker container that periodically takes snapshots from your [Ring](https://www.ring.com) cameras and then creates timelapse videos of the snapshots.
 
+## Difference from original repo
+
+Ring has a 640x limit on timelapse stills, this is a vibe coded alternative that records a short recording of the capture and converts it to a png instead. This will use more battery so I also added an option to skip cameras so I can only use it on my Ring device that is plugged in.
+
 [![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/wictorwilen/ring-timelapse/latest)](https://hub.docker.com/repository/docker/wictorwilen/ring-timelapse)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/wictorwilen/ring-timelapse/blob/main/LICENSE.md)
 

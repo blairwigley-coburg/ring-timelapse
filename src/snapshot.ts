@@ -29,32 +29,28 @@ const snapshot = async (): Promise<void> => {
         mkdirSync(path.resolve(__dirname, "target"));
     }
 
+    // Parse skipped devices from env var (comma-separated list)
+    const skippedDevicesEnv = process.env.SKIPPED_DEVICES || '';
+    const skippedDevices = skippedDevicesEnv
+        .split(',')
+        .map((d) => d.trim())
+        .filter((d) => d.length > 0);
+    if (skippedDevices.length > 0) {
+        log(`Skipping devices: ${skippedDevices.join(', ')}`);
+    }
+
     for (const camera of cameras) {
         // cameras.forEach(async camera => {
         const name = lodash.camelCase(camera.name);
         log(`Retrieving snapshot for ${camera.name}`);
-        try {
-            // Configure camera for high resolution (2K) snapshots
-            const resolutionEnv = process.env.SNAPSHOT_RESOLUTION || '2304'; // Default to 2K (2304p)
-            const resolution = parseInt(resolutionEnv, 10);
-            const forceSet = process.env.FORCE_SET_DEVICE_SETTINGS === 'true';
-            if (forceSet) {
-                log(`Setting camera resolution to ${resolution}p`);
-                try {
-                    await (camera as any).setDeviceSettings({
-                        snapshot_settings: {
-                            lite_24x7_resolution_p: resolution,
-                        },
-                    });
-                }
-                catch (e) {
-                    log('setDeviceSettings failed:', e && (e as any).response ? `${(e as any).response.status}` : e);
-                }
-            }
-            else {
-                log('Skipping setDeviceSettings (disabled). Set FORCE_SET_DEVICE_SETTINGS=true to enable.');
-            }
 
+        // Check if this device is in the skip list
+        if (skippedDevices.includes(camera.name)) {
+            log(`Skipped (in SKIPPED_DEVICES list)`);
+            continue;
+        }
+
+        try {
             const useLive = process.env.USE_LIVE_CAPTURE === 'true';
             let result: Buffer | undefined;
             if (!useLive) {
