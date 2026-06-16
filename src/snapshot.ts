@@ -1,12 +1,13 @@
 // Copyright (c) Wictor Wilén. All rights reserved. 
 // Licensed under the MIT license.
 
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 // ring-client-api is an ES module; load it dynamically at runtime to
 // avoid `ERR_REQUIRE_ESM` when running under CommonJS.
 import * as path from 'path'
 import * as dotenv from "dotenv";
 import * as lodash from "lodash";
+import FfmpegCommand from 'fluent-ffmpeg';
 
 const log = console.log;
 
@@ -54,8 +55,43 @@ const snapshot = async (): Promise<void> => {
                 log('Skipping setDeviceSettings (disabled). Set FORCE_SET_DEVICE_SETTINGS=true to enable.');
             }
 
-            log(`Requesting snapshot`);
-            const result = await (camera as any).getSnapshot();
+            const useLive = process.env.USE_LIVE_CAPTURE === 'true';
+            let result: Buffer | undefined;
+            if (!useLive) {
+                log(`Requesting snapshot`);
+                result = await (camera as any).getSnapshot();
+            }
+            else {
+                log('Using live-capture fallback (recording short stream)');
+                // ensure target dir exists
+                if (!existsSync(path.resolve(__dirname, "target", name))) mkdirSync(path.resolve(__dirname, "target", name));
+                const mp4Path = path.resolve(__dirname, "target", path.join(name, Date.now() + '.mp4'));
+                try {
+                    // record few seconds of live stream to file
+                    await (camera as any).recordToFile(mp4Path, 3);
+                    const pngName = Date.now() + '.png';
+                    const pngPath = path.resolve(__dirname, "target", path.join(name, pngName));
+                    await new Promise<void>((resolve, reject) => {
+                        FfmpegCommand(mp4Path)
+                            .screenshots({
+                                timestamps: ['00:00:01.000'],
+                                filename: pngName,
+                                folder: path.resolve(__dirname, "target", name),
+                            })
+                            .on('end', () => resolve())
+                            .on('error', (err: any) => reject(err));
+                    });
+                    // read produced png into buffer
+                    result = require('fs').readFileSync(pngPath);
+                    // remove temp mp4
+                    try { rmSync(mp4Path); } catch {}
+                }
+                catch (liveErr) {
+                    log('Live capture failed:', liveErr);
+                    // fall back to snapshot attempt
+                    result = await (camera as any).getSnapshot();
+                }
+            }
 
             log(path.resolve(__dirname, "target", name));
             if (!existsSync(path.resolve(__dirname, "target", name))) {
