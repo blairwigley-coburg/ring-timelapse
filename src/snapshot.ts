@@ -2,7 +2,8 @@
 // Licensed under the MIT license.
 
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { RingApi } from 'ring-client-api'
+// ring-client-api is an ES module; load it dynamically at runtime to
+// avoid `ERR_REQUIRE_ESM` when running under CommonJS.
 import * as path from 'path'
 import * as dotenv from "dotenv";
 import * as lodash from "lodash";
@@ -12,6 +13,7 @@ const log = console.log;
 
 const snapshot = async (): Promise<void> => {
     log("running snapshot")
+    const { RingApi } = await import('ring-client-api');
     const ringApi = new RingApi({
         refreshToken: process.env.TOKEN as string,
         debug: true // false
