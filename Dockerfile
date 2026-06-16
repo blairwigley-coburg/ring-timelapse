@@ -1,8 +1,5 @@
 FROM node:22-alpine AS BUILD_IMAGE
 
-# install node-prune
-RUN curl -sf https://gobinaries.com/tj/node-prune | sh
-
 WORKDIR /work
 
 COPY . /work/
@@ -16,8 +13,9 @@ RUN npm run build
 # remove development dependencies
 RUN npm prune --production
 
-# run node prune
-RUN /usr/local/bin/node-prune
+# attempt node-prune optimization (optional, won't fail if unavailable)
+RUN curl -sf https://gobinaries.com/tj/node-prune | sh || true
+RUN /usr/local/bin/node-prune || true
 
 FROM node:22-alpine
 
