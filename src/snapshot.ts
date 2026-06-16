@@ -13,7 +13,9 @@ const log = console.log;
 
 const snapshot = async (): Promise<void> => {
     log("running snapshot")
-    const { RingApi } = await import('ring-client-api');
+    // Use eval-import to avoid TypeScript downleveling `import()` to `require()`
+    // which fails for ES modules. This preserves a runtime dynamic import.
+    const RingApi = (await eval("import('ring-client-api')")).RingApi;
     const ringApi = new RingApi({
         refreshToken: process.env.TOKEN as string,
         debug: true // false
