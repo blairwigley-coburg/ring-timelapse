@@ -29,13 +29,18 @@ const snapshot = async (): Promise<void> => {
         const name = lodash.camelCase(camera.name);
         log(`Retrieving snapshot for ${camera.name}`);
         try {
-            // optional width from env (e.g. SNAPSHOT_WIDTH=1280)
-            const widthEnv = process.env.SNAPSHOT_WIDTH;
-            const width = widthEnv ? parseInt(widthEnv, 10) : undefined;
-            const opts: any = {};
-            if (width && !Number.isNaN(width)) opts.width = width;
-            log(`Requesting snapshot${opts.width ? ' (width=' + opts.width + ')' : ''}`);
-            const result = await (camera as any).getSnapshot(Object.keys(opts).length ? opts : undefined);
+            // Configure camera for high resolution (2K) snapshots
+            const resolutionEnv = process.env.SNAPSHOT_RESOLUTION || '2304'; // Default to 2K (2304p)
+            const resolution = parseInt(resolutionEnv, 10);
+            log(`Setting camera resolution to ${resolution}p`);
+            await (camera as any).setDeviceSettings({
+                snapshot_settings: {
+                    lite_24x7_resolution_p: resolution
+                }
+            });
+
+            log(`Requesting snapshot`);
+            const result = await (camera as any).getSnapshot();
 
             log(path.resolve(__dirname, "target", name));
             if (!existsSync(path.resolve(__dirname, "target", name))) {
