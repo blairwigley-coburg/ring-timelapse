@@ -3,72 +3,103 @@
 
 A Docker container that periodically takes snapshots from your [Ring](https://www.ring.com) cameras and then creates timelapse videos of the snapshots.
 
-## Difference from original repo
+**Fork of [wictorwilen/ring-timelapse](https://github.com/wictorwilen/ring-timelapse)**
 
-Ring has a 640x limit on timelapse stills, this is a vibe coded alternative that records a short recording of the capture and converts it to a png instead. This will use more battery so I also added an option to skip cameras so I can only use it on my Ring device that is plugged in.
+## What's Different in This Fork
 
-[![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/wictorwilen/ring-timelapse/latest)](https://hub.docker.com/repository/docker/wictorwilen/ring-timelapse)
+- **Live-capture mode**: Records 3 seconds of live stream and extracts a frame, yielding **full 2K resolution** instead of Ring's default 640px snapshots
+- **Skip devices**: Exclude specific cameras from snapshots (useful for battery-powered cams)
+- **Custom cron schedules**: Configure snapshot and timelapse timing at container runtime (no rebuild needed)
+- Updated to **Node.js 22 Alpine** for better compatibility with WebRTC streaming
+
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/wictorwilen/ring-timelapse/blob/main/LICENSE.md)
 
 ## Features
 
-- Takes snapshots of all Ring cameras periodically, default 15 minutes
-- Creates a timelapse video periodically, default every day
+- Records live streams from Ring cameras for full-resolution snapshots (2K/4K capable)
+- Takes snapshots periodically (configurable via cron)
+- Creates timelapse videos from snapshots (optional)
 - Runs as a Docker container with minimal footprint
+- Skip specific cameras to avoid battery drain
+- Configurable schedules at container runtime
 
-> **NOTE**: Taking snapshots often will drain the battery faster than normal.
+> **NOTE**: Live-capture mode uses streaming, which may drain battery faster on battery-powered cameras. Use `SKIPPED_DEVICES` to exclude them.
 
 ## Installation
 
-In order to run the Docker container you need a Ring refresh token.
-To generate the token use the following command:
+1. Generate a Ring refresh token:
 
 ``` bash
 npx -p ring-client-api ring-auth-cli
 ```
 
-Use the following to pull the Docker container from Docker hub.
+2. Create a directory for snapshots/timelapses:
 
 ``` bash
-docker pull wictorwilen/ring-timelapse
+mkdir -p /media/timelapse
 ```
 
-Before starting the container, create a directory that will be shared with the 
-container to persist the snapshots and timelapses, for instance:
-
-``` bash
-cd /media
-mkdir timelapse
-```
-
-Start the container by running:
+3. Run the container:
 
 ``` bash
 docker run \
   -d \
+  --name ring-timelapse \
   -e TOKEN="<insert token here>" \
+  -e USE_LIVE_CAPTURE="true" \
+  -e CRON_SCHEDULE="0 12 * * *" \
   -v "/media/timelapse:/app/dist/target" \
   --restart unless-stopped \
-  wictorwilen/ring-timelapse
+  wictorwilen/ring-timelapse:latest
 ```
 
-> **NOTE**: In the `-v` argument replace the local path (`/media/timelapse`) with the directory you created
+Replace the token and adjust paths/schedules as needed.
 
 ## Environment Variables
 
-The following variables are required:
+### Required
 
-`TOKEN` - your generated Ring token, see Installation
+- `TOKEN` — Your Ring refresh token (see Installation)
 
-The following variables are optional:
+### Optional
 
-`CRON_SCHEDULE` - Schedule for taking snapshots, in [Crontab format](https://linuxhandbook.com/crontab/). Default: `*/15 * * * *`
+- `USE_LIVE_CAPTURE` — Record live stream for full-resolution snapshots instead of API snapshots (default: `false`). Set to `true` for 2K quality.
+- `CRON_SCHEDULE` — Crontab schedule for snapshots (default: `*/15 * * * *` = every 15 minutes). Examples:
+  - `"0 12 * * *"` = once daily at noon
+  - `"0 */6 * * *"` = every 6 hours
+  - `"*/30 * * * *"` = every 30 minutes
+- `CRON_SCHEDULE_TIMELAPSE` — Crontab schedule for timelapse generation. Leave unset to disable.
+- `SKIPPED_DEVICES` — Comma-separated list of camera names to skip (e.g., `"Front Door,Back Door"`)
 
-`CRON_SCHEDULE_TIMELAPSE` - Schedule for generating the timelapse video. Default: `0 7 * * *`
+## Docker Compose Example
+
+``` yaml
+services:
+  ring-timelapse:
+    build:
+      context: https://github.com/blairwigley-coburg/ring-timelapse.git
+      dockerfile: Dockerfile
+    container_name: ring-timelapse
+    environment:
+      - TOKEN: "<insert token here>"
+      - USE_LIVE_CAPTURE: "true"
+      - CRON_SCHEDULE: "0 12 * * *"
+      - SKIPPED_DEVICES=Front Door
+    volumes:
+      - /media/timelapse:/app/dist/target
+    restart: unless-stopped
+```
+
+Replace the `TOKEN` with your Ring refresh token and adjust the volumes/devices as needed.
+
+## Original Repository
+
+This is a fork of [wictorwilen/ring-timelapse](https://github.com/wictorwilen/ring-timelapse). Check the original for the standard snapshot-based approach.
 
 ## Authors
 
-- [@wictorwilen](https://www.github.com/wictorwilen)
+- Original: [@wictorwilen](https://www.github.com/wictorwilen)
+- Fork improvements: Battery/resolution optimizations
   
 ## License
 
