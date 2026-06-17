@@ -34,14 +34,10 @@ COPY --from=BUILD_IMAGE /work/dist ./dist
 COPY --from=BUILD_IMAGE /work/node_modules ./node_modules
 COPY --from=BUILD_IMAGE /work/package.json .
 
-# Setup the cron job to 
-RUN echo "$CRON_SCHEDULE cd /app && npm run snapshot" >> /etc/crontabs/root
-RUN echo "$CRON_SCHEDULE_TIMELAPSE cd /app && npm run timelapse" >> /etc/crontabs/root
-
-# Create the cron log
+# Create the cron log (will be ensured again at runtime)
 RUN touch /var/log/cron.log
 
-# Setup our start file
+# Setup our start file (it will create the crontab at container start using env vars)
 COPY ./cron/run.sh /tmp/run.sh
 RUN chmod +x /tmp/run.sh 
 
