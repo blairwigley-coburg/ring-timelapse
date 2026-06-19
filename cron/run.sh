@@ -1,13 +1,27 @@
+touch /var/log/cron.log
 #!/bin/sh
 
 # Default schedules can be overridden via environment variables at container run
 : "${CRON_SCHEDULE:=*/15 * * * *}"
 # CRON_SCHEDULE_TIMELAPSE is optional; leave empty to disable
 
-# Write the crontab entries based on environment variables so runtime changes apply
+# Helper to trim surrounding double quotes from a variable
+trim_quotes() {
+  v="$1"
+  v="${v#\"}"
+  v="${v%\"}"
+  printf "%s" "$v"
+}
+
+CS="$(trim_quotes "$CRON_SCHEDULE")"
+CTS="$(trim_quotes "$CRON_SCHEDULE_TIMELAPSE")"
+
+echo "Writing crontab entries: snapshot='$CS' timelapse='$CTS'"
+
+# Write the crontab entries based on sanitized environment variables
 {
-  echo "$CRON_SCHEDULE cd /app && npm run snapshot"
-  [ -n "$CRON_SCHEDULE_TIMELAPSE" ] && echo "$CRON_SCHEDULE_TIMELAPSE cd /app && npm run timelapse"
+  echo "$CS cd /app && npm run snapshot"
+  [ -n "$CTS" ] && echo "$CTS cd /app && npm run timelapse"
 } > /etc/crontabs/root
 
 # Ensure cron log exists
