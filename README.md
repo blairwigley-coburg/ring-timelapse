@@ -92,6 +92,44 @@ services:
 
 Replace the `TOKEN` with your Ring refresh token and adjust the volumes/devices as needed.
 
+## Timezone / Cron
+
+BusyBox `crond` uses the container clock for schedules. To ensure cron jobs run in your local timezone (for example Australia/Melbourne), use one of the options below.
+
+- Bind the host timezone into the container (recommended, no image rebuild):
+
+```yaml
+services:
+  ring-timelapse:
+    build:
+      context: https://github.com/blairwigley-coburg/ring-timelapse.git
+      dockerfile: Dockerfile
+    container_name: ring-timelapse
+    environment:
+      - TOKEN: "<insert token here>"
+      - USE_LIVE_CAPTURE: "true"
+      - CRON_SCHEDULE: "0 12 * * *"
+      - SKIPPED_DEVICES=Front Door
+      - TZ: "Australia/Melbourne"
+    volumes:
+      - /media/timelapse:/app/dist/target
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+```
+
+- Install `tzdata` inside the image and set `TZ` (requires rebuilding the image):
+
+Add to the `Dockerfile` build stage:
+
+```Dockerfile
+RUN apk add --no-cache tzdata \
+  && cp /usr/share/zoneinfo/Australia/Melbourne /etc/localtime \
+  && echo "Australia/Melbourne" > /etc/timezone
+ENV TZ=Australia/Melbourne
+```
+
+After applying either approach, restart the container and check the logs — the startup script prints the sanitized crontab it writes, so you can verify the effective schedule.
+
 ## Original Repository
 
 This is a fork of [wictorwilen/ring-timelapse](https://github.com/wictorwilen/ring-timelapse). Check the original for the standard snapshot-based approach.
