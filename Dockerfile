@@ -20,7 +20,7 @@ RUN /usr/local/bin/node-prune || true
 FROM node:22-alpine
 
 # add ffmpeg
-RUN apk add  --no-cache ffmpeg
+RUN apk add  --no-cache ffmpeg tzdata
 
 ENV TOKEN=$TOKEN 
 # ENV CRON_SCHEDULE="*/1 * * * *"
