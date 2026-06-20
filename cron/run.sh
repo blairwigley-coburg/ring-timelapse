@@ -19,7 +19,14 @@ CTS="$(trim_quotes "$CRON_SCHEDULE_TIMELAPSE")"
 echo "Writing crontab entries: snapshot='$CS' timelapse='$CTS'"
 
 # Write the crontab entries based on sanitized environment variables
+TZ_VAL="$(trim_quotes "$TZ")"
+# Export TZ so the cron daemon and spawned jobs inherit it
+if [ -n "$TZ_VAL" ]; then
+  export TZ="$TZ_VAL"
+fi
+
 {
+  [ -n "$TZ_VAL" ] && echo "TZ=$TZ_VAL"
   echo "$CS cd /app && npm run snapshot"
   [ -n "$CTS" ] && echo "$CTS cd /app && npm run timelapse"
 } > /etc/crontabs/root
