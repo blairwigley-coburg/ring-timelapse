@@ -53,6 +53,7 @@ const snapshot = async (): Promise<void> => {
         try {
             const useLive = process.env.USE_LIVE_CAPTURE === 'true';
             let result: Buffer | undefined;
+            let producedPngName: string | undefined;
             if (!useLive) {
                 log(`Requesting snapshot`);
                 result = await (camera as any).getSnapshot();
@@ -66,6 +67,7 @@ const snapshot = async (): Promise<void> => {
                     // record few seconds of live stream to file
                     await (camera as any).recordToFile(mp4Path, 3);
                     const pngName = Date.now() + '.png';
+                    producedPngName = pngName;
                     const pngPath = path.resolve(__dirname, "target", path.join(name, pngName));
                     await new Promise<void>((resolve, reject) => {
                         FfmpegCommand(mp4Path)
@@ -97,7 +99,8 @@ const snapshot = async (): Promise<void> => {
                 log(`No snapshot result for ${camera.name}, skipping save`);
                 continue;
             }
-            writeFileSync(path.resolve(__dirname, "target", path.join(name, Date.now() + '.png')), result);
+            const fileName = producedPngName ? producedPngName : Date.now() + '.png';
+            writeFileSync(path.resolve(__dirname, "target", path.join(name, fileName)), result);
             log(`Snapshot for ${camera.name} saved`);
 
         }
