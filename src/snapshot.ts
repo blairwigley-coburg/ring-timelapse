@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
+import * as https from 'https';
 // ring-client-api is an ES module; load it dynamically at runtime to
 // avoid `ERR_REQUIRE_ESM` when running under CommonJS.
 import * as path from 'path'
@@ -10,6 +11,44 @@ import * as lodash from "lodash";
 import FfmpegCommand from 'fluent-ffmpeg';
 
 const log = console.log;
+const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL;
+
+async function postSlackNotification(message: string): Promise<void> {
+    if (!slackWebhookUrl) {
+        return;
+    }
+
+    const payload = JSON.stringify({ text: message });
+    const hookUrl = new URL(slackWebhookUrl);
+    const options: https.RequestOptions = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(payload),
+        },
+    };
+
+    await new Promise<void>((resolve, reject) => {
+        const req = https.request(hookUrl.href, options, (res) => {
+            const bodyChunks: Buffer[] = [];
+            res.on('data', (chunk) => bodyChunks.push(Buffer.from(chunk)));
+            res.on('end', () => {
+                const body = Buffer.concat(bodyChunks).toString('utf8');
+                if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve();
+                } else {
+                    reject(new Error(`Slack webhook responded with ${res.statusCode}: ${body}`));
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.write(payload);
+        req.end();
+    }).catch(err => {
+        log('Slack notification failed:', err);
+    });
+}
 
 
 const snapshot = async (): Promise<void> => {
@@ -97,6 +136,7 @@ const snapshot = async (): Promise<void> => {
             }
             if (!result) {
                 log(`No snapshot result for ${camera.name}, skipping save`);
+                await postSlackNotification(`:warning: Ring timelapse failed to capture a snapshot for *${camera.name}*.`);
                 continue;
             }
             const fileName = producedPngName ? producedPngName : Date.now() + '.png';
@@ -123,6 +163,8 @@ const snapshot = async (): Promise<void> => {
             catch (logErr) {
                 log('Failed logging error:', logErr, 'original error:', err);
             }
+                        await postSlackNotification(`:warning: Ring timelapse snapshot failed for *${camera.name}*:
+${err instanceof Error ? err.message : String(err)}`);
         }
     
 

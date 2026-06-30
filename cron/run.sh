@@ -34,6 +34,41 @@ fi
 # Ensure cron log exists
 touch /var/log/cron.log
 
+post_startup_slack_message() {
+  if [ -n "$SLACK_WEBHOOK_URL" ]; then
+    node - "$SLACK_WEBHOOK_URL" "$HOSTNAME" "$TZ_VAL" <<'NODE'
+const https = require('https');
+const webhook = process.argv[2];
+const hostname = process.argv[3] || 'unknown';
+const tz = process.argv[4] || 'unknown';
+const payload = JSON.stringify({
+  text: `:white_check_mark: ring-timelapse container started on ${hostname} (${tz})`
+});
+const url = new URL(webhook);
+const req = https.request({
+  method: 'POST',
+  hostname: url.hostname,
+  port: url.port || 443,
+  path: `${url.pathname}${url.search}`,
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(payload),
+  },
+}, (res) => {
+  res.resume();
+  res.on('end', () => {
+    process.exit(res.statusCode && res.statusCode >= 200 && res.statusCode < 300 ? 0 : 1);
+  });
+});
+req.on('error', () => process.exit(1));
+req.write(payload);
+req.end();
+NODE
+  fi
+}
+
+post_startup_slack_message || true
+
 # Start cron and follow the log
 crond -L /var/log/cron.log
 tail -f /var/log/cron.log

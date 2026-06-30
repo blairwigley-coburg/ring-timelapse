@@ -70,6 +70,7 @@ Replace the token and adjust paths/schedules as needed.
   - `"*/30 * * * *"` = every 30 minutes
 - `CRON_SCHEDULE_TIMELAPSE` — Crontab schedule for timelapse generation. Leave unset to disable.
 - `SKIPPED_DEVICES` — Comma-separated list of camera names to skip (e.g., `"Front Door,Back Door"`)
+- `SLACK_WEBHOOK_URL` — Slack incoming webhook URL to notify on snapshot failures. Leave unset to disable notifications.
 
 ## Docker Compose Example
 
