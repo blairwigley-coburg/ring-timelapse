@@ -177,6 +177,8 @@ snapshot() .then(() => {
     log("done");
     process.exit(0);
 })
-.catch(err => {
-    log(err)
+.catch(async err => {
+    log(err);
+    await postSlackNotification(`:warning: Ring timelapse snapshot run failed:
+${err instanceof Error ? err.message : String(err)}`);
 });
