@@ -9,7 +9,8 @@
     "build-container-latest": "npm run clean && docker build . -t wictorwilen/ring-timelapse:latest",
     "sh": "docker -it wictorwilen/ring-timelapse:dev sh",
     "snapshot": "node dist/snapshot",
-    "timelapse": "node dist/timelapse"
+    "timelapse": "node dist/timelapse",
+    "motion-alert": "node dist/motion-alert"
   },
   "author": "Wictor Wilén",
   "maintainers": [
